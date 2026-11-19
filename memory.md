@@ -2,7 +2,7 @@
 
 Read this first to pick the project back up. Update it after every finished task.
 
-Last updated: 4 Nov 2026
+Last updated: 19 Nov 2026
 
 ## What this is
 MentorLens helps students whose LeetCode-style code fails. They paste the question, their `Solution` code and the failing test. It really runs the code, shows it step by step beside a verified correct version, stops at the first difference, and explains the mistake with hints before the answer.
@@ -51,35 +51,58 @@ Frontend: HTML, CSS, JavaScript, Monaco. Backend: Java 17 target, Spring Boot 4,
 | GitHub Actions version updates | 9, 10, 11, 12 | Merged |
 | Task 9: hints by level | 13 | Merged |
 | Task 14 backend: consent and pilot groups | 14 | Merged |
+| Final backend fixes from the whole-backend review | 15 | Merged |
+| Dependabot updates (CodeQL v4, Maven 3.10.1) | 16, 17 | Merged |
+| Aryan: Pylint script with JSON output | 18 | Merged |
+| Aryan: FastAPI analysis service (`/health`, `/analyze`) | 19 | Merged into the wrong branch, so not on `main` |
+| Aryan's service brought to `main` | 20 | **Open, waiting for Anuj's merge** |
 
-Also done: `main` has a `protect-main` rule requiring `backend-tests`, `runner-tests` and `frontend-tests`, with 0 approvals. Anuj created the rule on GitHub from settings Claude checked, and Claude has not confirmed it is active.
+Also done:
+- `main` has a `protect-main` ruleset: pull requests required, `backend-tests`, `runner-tests` and `frontend-tests` must pass, 0 approvals, no force pushes or deletion.
+- Aryan has Write access. Abhi and Rudra aren't collaborators yet.
+- 19 Nov: the team was told their tasks in the WhatsApp group "Circle".
 
-## In progress: final backend fixes
-Branch `anuj-backend-final-fixes`, in a pull request waiting for Anuj's merge. 123 tests pass on H2.
+## System test, 19 Nov
+Run on latest `main` with a temporary PostgreSQL, the real backend and Aryan's service:
+- Backend tests: 123 passed. Aryan's tests: 5 on `main`, 29 on pull request 20.
+- Sign-up requires consent, login works, submitting without a token gives 401, and another student's submission gives 404.
+- **A real submission ends `FAILED`, "code runner is unavailable"**, because the backend calls `POST /run` and only `/health` and `/analyze` exist.
+- Pylint on the Two Sum sample found only style noise, not the real bug.
 
-A whole-backend review on real PostgreSQL found problems. Committed in `735a2d9` and `486f6a9`, 122 tests passing, then re-checked:
-- Long expected answers no longer leave a submission stuck.
-- CORS, consistent error replies, NUL rejection and a 256 KB body limit.
-- Incomplete AI replies can't score 100.
-- At most 3 active submissions per student, and optional `ALLOWED_EMAIL_DOMAIN`.
+## Anuj's tasks
+Backend tasks are done. Remaining, in order:
+1. Merge pull request 20 once its checks pass.
+2. Add Abhi and Rudra as collaborators with Write access.
+3. Follow up daily with Aryan on the runner (`POST /run`), the top blocker.
+4. Decide the team split: should Aryan's service also do analysis?
+5. Get a Gemini API key and set `AI_API_KEY` to test real AI feedback.
+6. Decide who pays for the AI and the server.
+7. Agree alpha and pilot dates.
+8. Get Dr. Shukla's approval of the new scope, update the synopsis, and re-export its PDF.
+9. Learn the backend code well enough to explain it in the viva.
+10. When the runner is ready: test the full flow end to end and fix mismatches.
+11. If Aryan does analysis: make the backend call `/analyze`.
 
-The re-check then found `/%61pi/auth/login` bypassed the login rate limit. Fixed in `9734ece`, with a real-server test seen failing without the fix. Claude read that diff, but no fresh subagent re-checked it.
+## Open review points for Aryan
+- Disable Pylint rules `C0103`, `C0114`, `C0115`, `C0116` and `R0903`, which flag names LeetCode forces on students.
+- Errors use `{"detail": ...}`; the contract uses `{"error": ...}`.
+- No limit on Pylint runs at the same moment.
 
 ## Not built
-- Runner (Tasks 2-4): nothing on `main` except a README and `pytest.ini`.
+- Runner (Tasks 2-4): no `POST /run` yet. Only the Pylint analysis exists.
 - Frontend (Tasks 10-12) and consent checkbox: sign-up needs `"consent": true` from the frontend.
 - Samples (Task 13): only `two_sum_sorted_wrong_pointer` exists.
 - Dashboard (Task 15): `GET /api/students/me/progress` doesn't exist.
 
 ## Open decisions
 1. **Team split, waiting for Anuj.** Proposal: Anuj keeps the backend, JSON passing and the AI call. Aryan's Python service takes the runner and analysis (`/analyze`: Pylint findings, measured complexity, first difference, score). This would move Java code to Python and change the design, plan and contract. Fallback: move only Pylint and measured complexity.
-2. Whether to send Aryan his message, which waits on decision 1.
-3. Who pays for AI and the server, and the budget.
-4. Alpha and pilot dates.
-5. Dr. Shukla's approval of the new scope. The synopsis still describes the old design, and its PDF has only the cover page.
+2. Who pays for AI and the server, and the budget.
+3. Alpha and pilot dates.
+4. Dr. Shukla's approval of the new scope. The synopsis still describes the old design, and its PDF has only the cover page.
 
 ## Known limits
 - Never run end to end with a real runner or real Gemini.
+- Team chat is the WhatsApp group "Circle". Claude drafts messages, and Anuj approves each before it's sent.
 - Failed AI calls count toward the daily limit of 20, which can overshoot by 3.
 - `1.0` and `1` count as different. Questions with several valid answers can be wrongly marked as failing.
 - Docker sandbox tests don't run in automatic checks.
