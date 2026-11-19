@@ -29,15 +29,23 @@ import sys
 from pathlib import Path
 
 
-def run_pylint(file_path: Path) -> list:
-    """Run Pylint on file_path and return its raw message list."""
+def run_pylint(file_path: Path, timeout: float = None) -> list:
+    """Run Pylint on file_path and return its raw message list.
+
+    If timeout (seconds) is given and Pylint takes longer, RuntimeError is raised.
+    """
     cmd = [
         sys.executable, "-m", "pylint",
         "--output-format=json",
         "--score=n",
         str(file_path),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Pylint timed out after {timeout} seconds") from exc
 
     # Pylint exit codes are a bitmask: 1-30 just mean "messages were found".
     # 32 means a usage error; anything with no JSON on stdout is a real failure.
@@ -62,9 +70,9 @@ def to_issue(msg: dict) -> dict:
     }
 
 
-def analyze(file_path: Path) -> dict:
+def analyze(file_path: Path, timeout: float = None) -> dict:
     """Return the full result dict for file_path."""
-    issues = [to_issue(m) for m in run_pylint(file_path)]
+    issues = [to_issue(m) for m in run_pylint(file_path, timeout)]
     issues.sort(key=lambda i: (i["line"] or 0, i["column"] or 0))
     return {
         "file": str(file_path),
