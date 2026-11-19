@@ -1,0 +1,119 @@
+{
+  "file": "samples/sample_code.py",
+  "tool": "pylint",
+  "issue_count": 14,
+  "issues": [
+    {
+      "line": 1,
+      "column": 0,
+      "severity": "convention",
+      "message": "Missing module docstring",
+      "rule_id": "C0114",
+      "symbol": "missing-module-docstring"
+    },
+    {
+      "line": 1,
+      "column": 0,
+      "severity": "warning",
+      "message": "Unused import os",
+      "rule_id": "W0611",
+      "symbol": "unused-import"
+    },
+    {
+      "line": 2,
+      "column": 0,
+      "severity": "warning",
+      "message": "Unused import sys",
+      "rule_id": "W0611",
+      "symbol": "unused-import"
+    },
+    {
+      "line": 5,
+      "column": 0,
+      "severity": "convention",
+      "message": "Missing function or method docstring",
+      "rule_id": "C0116",
+      "symbol": "missing-function-docstring"
+    },
+    {
+      "line": 9,
+      "column": 4,
+      "severity": "warning",
+      "message": "Unused variable 'leftover'",
+      "rule_id": "W0612",
+      "symbol": "unused-variable"
+    },
+    {
+      "line": 13,
+      "column": 0,
+      "severity": "convention",
+      "message": "Missing class docstring",
+      "rule_id": "C0115",
+      "symbol": "missing-class-docstring"
+    },
+    {
+      "line": 13,
+      "column": 0,
+      "severity": "convention",
+      "message": "Class name \"user_account\" doesn't conform to PascalCase naming style",
+      "rule_id": "C0103",
+      "symbol": "invalid-name"
+    },
+    {
+      "line": 13,
+      "column": 0,
+      "severity": "refactor",
+      "message": "Too few public methods (1/2)",
+      "rule_id": "R0903",
+      "symbol": "too-few-public-methods"
+    },
+    {
+      "line": 17,
+      "column": 4,
+      "severity": "convention",
+      "message": "Missing function or method docstring",
+      "rule_id": "C0116",
+      "symbol": "missing-function-docstring"
+    },
+    {
+      "line": 18,
+      "column": 25,
+      "severity": "error",
+      "message": "Undefined variable 'undefined_name'",
+      "rule_id": "E0602",
+      "symbol": "undefined-variable"
+    },
+    {
+      "line": 21,
+      "column": 0,
+      "severity": "convention",
+      "message": "Missing function or method docstring",
+      "rule_id": "C0116",
+      "symbol": "missing-function-docstring"
+    },
+    {
+      "line": 21,
+      "column": 0,
+      "severity": "refactor",
+      "message": "Either all return statements in a function should return an expression, or none of them should.",
+      "rule_id": "R1710",
+      "symbol": "inconsistent-return-statements"
+    },
+    {
+      "line": 23,
+      "column": 15,
+      "severity": "warning",
+      "message": "Use of eval",
+      "rule_id": "W0123",
+      "symbol": "eval-used"
+    },
+    {
+      "line": 24,
+      "column": 4,
+      "severity": "warning",
+      "message": "No exception type(s) specified",
+      "rule_id": "W0702",
+      "symbol": "bare-except"
+    }
+  ]
+}
