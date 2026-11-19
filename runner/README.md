@@ -20,6 +20,16 @@ Then add these in order:
 3. The web service
 4. The queue
 
+## Pylint script
+`pylint_script.py` runs Pylint on one Python file and prints the issues as JSON
+(`line`, `severity`, `message`, plus `column`, `rule_id`, `symbol`).
+```
+pip install -r requirements.txt
+python pylint_script.py samples/sample_code.py
+```
+On failure (missing file, not a `.py` file, Pylint crash) it prints `{"error": "..."}` and exits 1.
+Severity is Pylint's category: `convention`, `refactor`, `warning`, `error`, `fatal`.
+
 ## Run locally
 ```
 python -m venv .venv
