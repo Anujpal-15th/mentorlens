@@ -55,3 +55,14 @@ def test_non_python_file_returns_error_json(tmp_path):
     )
     assert proc.returncode == 1
     assert "error" in json.loads(proc.stdout)
+
+
+def test_timeout_raises_runtime_error(monkeypatch):
+    import pytest
+
+    def hang(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd="pylint", timeout=1)
+
+    monkeypatch.setattr(subprocess, "run", hang)
+    with pytest.raises(RuntimeError, match="timed out"):
+        pylint_script.run_pylint(SAMPLE, timeout=1)
