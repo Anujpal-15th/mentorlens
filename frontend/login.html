@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in · MentorLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="js/login.js"></script>
+</head>
+<body>
+  <header id="topbar" class="topbar"></header>
+  <main class="auth-wrap">
+    <section class="card auth-card fade-in" aria-labelledby="auth-title">
+      <div class="card-body">
+        <div class="auth-hero">
+          <div id="hero-mark"></div>
+          <h1 id="auth-title">Welcome to MentorLens</h1>
+          <p>See exactly where your solution goes wrong, step by step.</p>
+        </div>
+
+        <div class="segmented" role="tablist" aria-label="Account">
+          <button type="button" role="tab" id="tab-login" aria-selected="true" aria-controls="auth-form">Log in</button>
+          <button type="button" role="tab" id="tab-register" aria-selected="false" aria-controls="auth-form">Sign up</button>
+        </div>
+
+        <form id="auth-form" class="stack" novalidate>
+          <div id="auth-message" aria-live="polite"></div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@university.edu">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" required maxlength="72">
+            <span class="help" id="password-help" hidden>At least 8 characters.</span>
+          </div>
+          <label class="check" id="consent-row" hidden>
+            <input type="checkbox" id="consent" name="consent">
+            <span>I agree that my code is sent to a third-party AI provider (Google Gemini) for analysis.</span>
+          </label>
+          <button class="btn btn-primary btn-block" id="auth-submit" type="submit">Log in</button>
+        </form>
+
+        <details class="settings">
+          <summary>Server settings</summary>
+          <div class="row">
+            <label class="sr-only" for="api-base">Backend URL</label>
+            <input class="input mono" id="api-base" type="url" placeholder="http://localhost:8080">
+            <button class="btn btn-sm" id="api-save" type="button">Save</button>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
