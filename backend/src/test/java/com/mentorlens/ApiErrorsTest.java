@@ -18,7 +18,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -26,8 +32,39 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:apierrors;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
+@Import(ApiErrorsTest.StatusController.class)
 class ApiErrorsTest {
     private static final String LOGIN = "{\"email\":\"a@x.com\",\"password\":\"password123\"}";
+
+    @RestController
+    static class StatusController {
+        @GetMapping("/api/auth/t/nonenum")
+        void nonEnum() {
+            throw new ResponseStatusException(HttpStatusCode.valueOf(499), "custom");
+        }
+
+        @GetMapping("/api/auth/t/noreason")
+        void noReason() {
+            throw new ResponseStatusException(HttpStatusCode.valueOf(499));
+        }
+
+        @GetMapping("/api/auth/t/noreason404")
+        void noReason404() {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+        }
+
+        @GetMapping("/api/auth/t/headers")
+        void headers() {
+            var h = new HttpHeaders();
+            h.add("X-Test", "yes");
+            throw new ResponseStatusException(HttpStatusCode.valueOf(503), "later", null) {
+                @Override
+                public HttpHeaders getHeaders() {
+                    return h;
+                }
+            };
+        }
+    }
 
     @Autowired MockMvc mvc;
     @MockitoBean UserRepository users;
@@ -126,5 +163,26 @@ class ApiErrorsTest {
             .andExpect(status().isBadRequest());
         mvc.perform(post("/api/submissions").with(ip("10.0.0.1")))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void nonEnumStatusKeepsItsCodeAndErrorBody() throws Exception {
+        mvc.perform(get("/api/auth/t/nonenum"))
+            .andExpect(status().is(499)).andExpect(jsonPath("$.error").value("custom"));
+    }
+
+    @Test
+    void missingReasonStillGivesAnErrorMessage() throws Exception {
+        mvc.perform(get("/api/auth/t/noreason"))
+            .andExpect(status().is(499)).andExpect(jsonPath("$.error").isNotEmpty());
+        mvc.perform(get("/api/auth/t/noreason404"))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.error").value("Not Found"));
+    }
+
+    @Test
+    void exceptionHeadersArePassedThrough() throws Exception {
+        mvc.perform(get("/api/auth/t/headers"))
+            .andExpect(status().isServiceUnavailable()).andExpect(header().string("X-Test", "yes"))
+            .andExpect(jsonPath("$.error").value("later"));
     }
 }
