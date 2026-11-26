@@ -208,7 +208,7 @@ class SubmissionApiTest {
     @Test
     void malformedIdReturns404WithErrorBody() throws Exception {
         mvc.perform(get("/api/submissions/not-a-uuid").header("Authorization", register("b1@x.com")))
-            .andExpect(status().isNotFound()).andExpect(jsonPath("$.error").value("Submission not found"));
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.error").value("Not found"));
     }
 
     @Test
