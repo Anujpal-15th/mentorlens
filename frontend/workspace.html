@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New submission · MentorLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="js/workspace.js"></script>
+</head>
+<body>
+  <header id="topbar" class="topbar"></header>
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <h1>New submission</h1>
+        <p>Paste your solution and the test it fails. MentorLens replays it beside a verified correct run.</p>
+      </div>
+      <a class="btn" href="result.html?sample=1" id="sample-link">Try the sample result</a>
+    </div>
+
+    <form id="submit-form" class="workspace" novalidate>
+      <section class="card editor-card" aria-labelledby="code-label">
+        <div class="card-head">
+          <div class="row">
+            <h2 id="code-label">Your solution</h2>
+            <span class="pill">Python 3</span>
+          </div>
+          <span class="editor-status" id="editor-status" aria-live="polite">Loading editor…</span>
+        </div>
+        <div id="editor-host" class="editor-host" hidden></div>
+        <label class="sr-only" for="code-fallback">Your solution code</label>
+        <textarea id="code-fallback" class="editor-fallback" spellcheck="false" maxlength="20000" autocapitalize="off" autocomplete="off"></textarea>
+      </section>
+
+      <section class="card" aria-label="Question and failing test">
+        <div class="card-body stack">
+          <div class="field">
+            <label for="question">Question</label>
+            <textarea class="input" id="question" rows="4" maxlength="5000" required></textarea>
+          </div>
+          <div class="field">
+            <label for="input-text">Failing test input</label>
+            <textarea class="input mono" id="input-text" rows="2" maxlength="5000" required></textarea>
+            <span class="help">Paste it exactly as the platform shows it, for example <code>numbers = [2,7,11,15], target = 9</code>.</span>
+          </div>
+          <div class="field">
+            <label for="expected-text">Expected output</label>
+            <input class="input mono" id="expected-text" maxlength="5000" required>
+          </div>
+          <div class="ai-notice" role="note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6z"/><path d="M12 8v4M12 15.5h.01"/></svg>
+            <span><strong>Third-party AI notice.</strong> Your code, question and test are sent to Google Gemini, a third-party AI provider, to write the explanation and hints. Your code itself runs in MentorLens's own sandbox.</span>
+          </div>
+          <div id="submit-message" aria-live="polite"></div>
+          <button class="btn btn-primary btn-block" id="submit-btn" type="submit">Analyse my solution</button>
+        </div>
+      </section>
+    </form>
+  </main>
+</body>
+</html>
