@@ -11,12 +11,27 @@ export function readLocation(search) {
 
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const DONE_STATES = new Set(['DONE', 'FAILED']);
+const WAIT_STATES = new Set(['QUEUED', 'RUNNING']);
+export const RETRIES = 3;
+
 // Reads the submission until it is DONE or FAILED. It only ever GETs: a reload never resubmits.
+// A network failure (status 0) is retried with backoff; an unknown status stops polling.
 export async function pollSubmission(api, id, { onUpdate = () => {}, sleep = defaultSleep, interval = POLL_MS, isCancelled = () => false } = {}) {
+  let failures = 0;
   for (;;) {
-    const sub = await api.getSubmission(id);
+    let sub;
+    try {
+      sub = await api.getSubmission(id);
+      failures = 0;
+    } catch (err) {
+      if (err.status !== 0 || failures >= RETRIES - 1) throw err;
+      failures += 1;
+      await sleep(interval * 2 ** (failures - 1));
+      continue;
+    }
     onUpdate(sub);
-    if (!sub || sub.status === 'DONE' || sub.status === 'FAILED' || isCancelled()) return sub;
+    if (!sub || DONE_STATES.has(sub.status) || !WAIT_STATES.has(sub.status) || isCancelled()) return sub;
     await sleep(interval);
   }
 }
@@ -73,7 +88,9 @@ export function resultView(r) {
 
   let compare;
   if (hasCorrect && fd) compare = { mode: 'side-by-side', reason: null };
-  else if (!hasCorrect) compare = { mode: 'single', reason: 'No verified correct run is available for this submission, so only your run is shown.' };
+  // Neutral on purpose: explanation-only pilot students also get a null correctTrace.
+  else if (!hasCorrect) compare = { mode: 'single', reason: 'Only your run is shown.' };
+  else if (passed) compare = { mode: 'single', reason: 'Your run matched the verified correct run step by step, so only your run is shown.' };
   else compare = { mode: 'single', reason: 'Your run and the verified correct run could not be lined up step by step (they likely take a different approach), so only your run is shown.' };
 
   const explanation = !r.noCheckedExplanation && r.explanation && (r.explanation.what || r.explanation.where || r.explanation.why)
@@ -121,3 +138,40 @@ export function lineDiff(before, after) {
   }
   return b.map((text, j) => ({ n: j + 1, text, changed: !keep.has(j) }));
 }
+
+// ---- Hint ladder ----
+// Levels: 1 nudge, 2 pointer, 3 guided fix, 4 correct version. correctCode is only kept at level 4.
+
+export const topLevel = (hints) => hints.reduce((m, h) => Math.max(m, h.level), 0);
+
+export function applyHint(hints, reply) {
+  const level = Number(reply && reply.level);
+  if (!Number.isInteger(level) || level < 1 || level > 4) throw new Error('The server sent a hint this page does not recognise.');
+  const correctCode = level === 4 && typeof reply.correctCode === 'string' && reply.correctCode ? reply.correctCode : null;
+  const expected = topLevel(hints) + 1;
+  const gap = level > expected ? Array.from({ length: level - expected }, (_, i) => expected + i) : null;
+  const rest = hints.filter((h) => h.level !== level);
+  const prev = hints.find((h) => h.level === level);
+  const entry = { level, text: String(reply.text ?? prev?.text ?? ''), correctCode };
+  return { hints: [...rest, entry].sort((a, b) => a.level - b.level), correctCode, gap };
+}
+
+export async function requestNextHint(api, id, hints) {
+  try {
+    const out = applyHint(hints, await api.nextHint(id));
+    return { ...out, error: null };
+  } catch (err) {
+    const code = hints.find((h) => h.level === 4)?.correctCode ?? null;
+    const message = err.status === 404 ? `Hints are not available for this submission (${err.message}).` : (err.message || 'Could not load the next hint.');
+    return { hints, correctCode: code, gap: null, error: message };
+  }
+}
+
+// Levels below the highest one that this browser never saw (opened elsewhere).
+export function missingLevels(hints) {
+  const have = new Set(hints.map((h) => h.level));
+  return Array.from({ length: Math.max(topLevel(hints) - 1, 0) }, (_, i) => i + 1).filter((n) => !have.has(n));
+}
+
+// The correct code is never written to localStorage; level 4 can be asked for again.
+export const hintsForStorage = (hints) => hints.map((h) => ({ level: h.level, text: h.text, correctCode: null }));

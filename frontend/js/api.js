@@ -30,7 +30,11 @@ export class ApiError extends Error {
 }
 
 function defaultUnauthorized() {
-  if (globalThis.location) globalThis.location.assign('login.html?expired=1');
+  const loc = globalThis.location;
+  if (!loc) return;
+  // Come back to the same page (for example result.html?id=...) after logging in again.
+  const here = loc.pathname.split('/').pop() + loc.search;
+  loc.assign(`login.html?expired=1&next=${encodeURIComponent(here)}`);
 }
 
 export function createApi({

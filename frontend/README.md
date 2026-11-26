@@ -12,6 +12,8 @@ python -m http.server 5173 --directory frontend
 
 Open http://localhost:5173/login.html.
 
+The login token (JWT) and your email are kept in `localStorage` (`mentorlens.token`, `mentorlens.email`) and cleared by Log out or any 401 reply. Monaco (cdn.jsdelivr.net) and the Inter and JetBrains Mono fonts (Google Fonts) load from CDNs, so the pages need internet access for those. Without it, the editor falls back to a plain code box and the fonts fall back to system fonts.
+
 The backend URL defaults to `http://localhost:8080`. To change it, open **Server settings** on the login page (stored in `localStorage` as `mentorlens.apiBase`).
 
 ## Pages
@@ -33,7 +35,7 @@ The backend URL defaults to `http://localhost:8080`. To change it, open **Server
 - When `correctTrace` or `firstDifference` is null, only your run is shown, with the reason.
 - The correct code is only shown at hint level 4 (or in sample mode). Before that the correct pane shows line numbers and variables without source.
 
-The result API does not return the submitted code, so the workspace keeps it in `localStorage` (`mentorlens.sub.<id>`) for the replay panes. On another browser the panes show line numbers only.
+The result API does not return the submitted code, so the workspace keeps it in `localStorage` (`mentorlens.sub.<id>`) for the replay panes. On another browser the panes show line numbers only. Revealed hint texts are kept as `mentorlens.hints.<id>`; the level 4 correct code is never stored, and the page offers to fetch it again (level 4 repeats).
 
 ## Code layout
 
@@ -41,7 +43,7 @@ The result API does not return the submitted code, so the workspace keeps it in 
 | --- | --- |
 | `js/api.js` | Backend client: token header, `{error}` messages, 401 clears the token and goes to login. No DOM. |
 | `js/replay.js` | `createReplay(yours, correct, firstDifference)`, variable diffing, the first-difference sentence. No DOM. |
-| `js/result-model.js` | URL parsing, polling, progress and result view-models, line diff. No DOM. |
+| `js/result-model.js` | URL parsing, polling with retry, progress and result view-models, hint ladder, line diff. No DOM. |
 | `js/format.js`, `js/sample.js` | Value formatting; sample code, hints and result. No DOM. |
 | `js/drawings.js` | `draw(value)` and in-place updates for pointer animation. |
 | `js/ui.js` | DOM helpers, icons, top bar, auth guard. |

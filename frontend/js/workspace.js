@@ -78,7 +78,9 @@ async function onSubmit(e) {
   btn.disabled = true;
   btn.replaceChildren(Object.assign(document.createElement('span'), { className: 'spinner' }), 'Submitting');
   try {
-    const { id } = await api.submit(payload);
+    const reply = await api.submit(payload);
+    const id = reply && (typeof reply.id === 'string' || typeof reply.id === 'number') ? String(reply.id) : '';
+    if (!id) throw new Error('The server accepted the submission but did not return its id. Please try again.');
     // The result API does not return the code, so keep it in this browser for the replay panes.
     storeJson(`mentorlens.sub.${id}`, { code: payload.code, question: payload.question, ...payload.failingTest });
     location.assign(`result.html?id=${encodeURIComponent(id)}`);

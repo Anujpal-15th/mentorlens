@@ -1,6 +1,9 @@
 // Result page: waiting state, verdict, side-by-side replay, AI mentor panel.
 import { api, el, svg, icon, alertBox, renderTopBar, requireAuth, storeJson, loadJson } from './ui.js';
-import { readLocation, pollSubmission, progressView, resultView, lineDiff } from './result-model.js';
+import {
+  readLocation, pollSubmission, progressView, resultView, lineDiff,
+  requestNextHint, topLevel, missingLevels, hintsForStorage,
+} from './result-model.js';
 import { createReplay, differingVariables, changedVariables, differenceCallout } from './replay.js';
 import { drawInto, kindOf } from './drawings.js';
 import { formatValue } from './format.js';
@@ -127,11 +130,12 @@ function codeList(code, lineCount, marks = {}) {
   return { list, items };
 }
 
-const maxLine = (trace) => (trace || []).reduce((m, s) => Math.max(m, Number(s.line) || 0), 1);
+const maxLine = (trace) => (Array.isArray(trace) ? trace : []).reduce((m, s) => Math.max(m, Number(s && s.line) || 0), 1);
 
 function buildPane(side) {
   const mine = side === 'yours';
-  const trace = mine ? S.result.studentTrace : S.result.correctTrace;
+  const raw = mine ? S.result.studentTrace : S.result.correctTrace;
+  const trace = Array.isArray(raw) ? raw : [];
   const code = mine ? S.studentCode : S.correctCode;
   const fd = S.view.firstDifference;
   const { list, items } = codeList(code, maxLine(trace), { diffLine: mine && fd ? fd.line : null });
@@ -242,7 +246,10 @@ function setPlaying(on) {
 
 const act = (fn) => () => { setPlaying(false); fn(); render(); };
 
+let wired = false;
 function wireControls() {
+  if (wired) return;
+  wired = true;
   $('btn-first').append(icon('first'));
   $('btn-back').append(icon('back'));
   $('btn-next').append(icon('next'));
@@ -259,7 +266,7 @@ function wireControls() {
   document.addEventListener('keydown', (e) => {
     const t = e.target;
     if (e.altKey || e.ctrlKey || e.metaKey || t.closest?.('input, textarea, select, [contenteditable]')) return;
-    if (e.key === ' ' && t.closest?.('button, a')) return;
+    if ([' ', 'Home', 'End'].includes(e.key) && t.closest?.('button, a')) return;
     const map = {
       ArrowRight: () => S.replay.next(), ArrowLeft: () => S.replay.back(),
       Home: () => S.replay.first(), End: () => S.replay.last(),
@@ -283,6 +290,7 @@ function renderReplay() {
   }
   S.replay = createReplay(trace, side ? r.correctTrace : null, S.view.firstDifference);
   const notes = $('replay-notes');
+  notes.replaceChildren();
   const fd = S.view.firstDifference;
   if (fd) {
     notes.append(el('div', { class: 'callout', id: 'callout', role: 'note' }, icon('target'),
@@ -345,43 +353,45 @@ async function requestHint() {
   S.hintBusy = true;
   S.hintError = null;
   paintHints();
-  try {
-    const level = S.hints.length ? S.hints[S.hints.length - 1].level : 0;
-    const h = S.sample ? sampleHint(level + 1) : await api.nextHint(S.id);
-    if (!S.hints.some((x) => x.level === h.level)) S.hints.push({ level: h.level, text: h.text, correctCode: h.correctCode ?? null });
-    if (h.level === 4 && typeof h.correctCode === 'string' && h.correctCode) {
-      S.correctCode = h.correctCode;
-      if (S.panes.length > 1) { S.panes[1] = buildPane('correct'); $('panes').replaceChildren(...S.panes.map((p) => p.root)); render(); }
-    }
-    if (!S.sample) storeJson(hintKey(), S.hints);
-  } catch (err) {
-    S.hintError = err.message || 'Could not load the next hint.';
-  } finally {
-    S.hintBusy = false;
-    paintHints();
+  // Sample hints are local; real ones come from GET /api/submissions/{id}/hints/next.
+  const sampleApi = { nextHint: async () => sampleHint(Math.min(topLevel(S.hints) + 1, 4)) };
+  const out = await requestNextHint(S.sample ? sampleApi : api, S.id, S.hints);
+  S.hints = out.hints;
+  S.hintError = out.error;
+  if (out.correctCode && out.correctCode !== S.correctCode) {
+    S.correctCode = out.correctCode;
+    if (S.panes.length > 1) { S.panes[1] = buildPane('correct'); $('panes').replaceChildren(...S.panes.map((p) => p.root)); render(); }
   }
+  if (!S.sample) storeJson(hintKey(), hintsForStorage(S.hints));
+  S.hintBusy = false;
+  paintHints();
 }
 
 let hintHost = null;
 function paintHints() {
   if (!hintHost) return;
-  const top = S.hints.reduce((m, h) => Math.max(m, h.level), 0);
+  const top = topLevel(S.hints);
+  const gap = missingLevels(S.hints);
   const ladder = el('div', { class: 'ladder', role: 'list', 'aria-label': `Hint level ${top} of 4` },
     el('div', { class: 'ladder-fill', style: { width: `${(Math.max(top - 1, 0) / 3) * 75}%` } }),
     HINT_NAMES.map((name, i) => el('div', { class: `rung${i < top ? ' is-on' : ''}`, role: 'listitem' },
       el('span', { class: 'dot' }, String(i + 1)), name)));
-  const list = el('div', { class: 'hint-list', 'aria-live': 'polite' }, S.hints.map((h) => {
+  const list = el('div', { class: 'hint-list', 'aria-live': 'polite' }, gap.length ? el('div', { class: 'hint' },
+    el('div', { class: 'hint-level' }, `Level${gap.length > 1 ? 's' : ''} ${gap.join(', ')}`),
+    el('p', {}, 'Earlier hints were opened on another device or in another session, so they are not shown here.')) : null, S.hints.map((h) => {
     const card = el('div', { class: 'hint' },
       el('div', { class: 'hint-level' }, `Level ${h.level} · ${HINT_NAMES[h.level - 1] || ''}`),
       el('p', {}, h.text));
     if (h.level === 4 && h.correctCode) card.append(fixBlock(h.correctCode));
+    else if (h.level === 4) card.append(el('p', { style: { color: 'var(--muted)', fontSize: '0.85rem', marginTop: '6px' } }, 'The correct code is not saved in this browser. Show it again below.'));
     return card;
   }));
   const next = top + 1;
+  const again = top >= 4 && !S.correctCode; // level 4 repeats, so the code can be fetched again
   const button = el('button', {
-    class: `btn ${top < 4 ? 'btn-primary' : ''} btn-block`, type: 'button',
-    disabled: S.hintBusy || top >= 4 ? true : null, onclick: requestHint,
-  }, S.hintBusy ? [el('span', { class: 'spinner' }), 'Loading hint'] : top >= 4 ? 'All hints shown' : `Show hint ${next} · ${HINT_NAMES[next - 1]}`);
+    class: `btn ${top < 4 || again ? 'btn-primary' : ''} btn-block`, type: 'button',
+    disabled: S.hintBusy || (top >= 4 && !again) ? true : null, onclick: requestHint,
+  }, S.hintBusy ? [el('span', { class: 'spinner' }), 'Loading hint'] : again ? 'Show the correct version again' : top >= 4 ? 'All hints shown' : `Show hint ${next} · ${HINT_NAMES[next - 1]}`);
   hintHost.replaceChildren(...[ladder, list,
     S.hintError && el('div', { style: { marginBottom: '10px' } }, alertBox('error', S.hintError)), button,
     top < 4 && el('p', { style: { color: 'var(--muted)', fontSize: '0.8rem', marginTop: '8px', textAlign: 'center' } }, 'Try each hint before asking for the next one. Level 4 shows the full fix.'),
@@ -411,9 +421,8 @@ function renderMentor() {
   if (v.explanation) {
     hintHost = el('div', { class: 'card-body', style: { borderTop: '1px solid var(--border)' } });
     const stored = S.sample ? null : loadJson(hintKey());
-    S.hints = Array.isArray(stored) && stored.length ? stored : v.hint ? [{ level: v.hint.level || 1, text: v.hint.text, correctCode: null }] : [];
-    const level4 = S.hints.find((h) => h.level === 4 && h.correctCode);
-    if (level4 && !S.sample) S.correctCode = level4.correctCode;
+    const valid = Array.isArray(stored) ? stored.filter((h) => h && Number.isInteger(h.level) && h.level >= 1 && h.level <= 4) : [];
+    S.hints = valid.length ? hintsForStorage(valid) : v.hint ? [{ level: v.hint.level || 1, text: v.hint.text, correctCode: null }] : [];
     sections.push(el('div', { class: 'card-head', style: { borderTop: '1px solid var(--border)' } }, el('h2', {}, 'Hints')), hintHost);
     paintHints();
   }
