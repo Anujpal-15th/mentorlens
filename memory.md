@@ -2,7 +2,7 @@
 
 Read this first to pick the project back up. Update it after every finished task.
 
-Last updated: 19 Nov 2026
+Last updated: 26 Nov 2026
 
 ## What this is
 MentorLens helps students whose LeetCode-style code fails. They paste the question, their `Solution` code and the failing test. It really runs the code, shows it step by step beside a verified correct version, stops at the first difference, and explains the mistake with hints before the answer.
@@ -55,7 +55,9 @@ Frontend: HTML, CSS, JavaScript, Monaco. Backend: Java 17 target, Spring Boot 4,
 | Dependabot updates (CodeQL v4, Maven 3.10.1) | 16, 17 | Merged |
 | Aryan: Pylint script with JSON output | 18 | Merged |
 | Aryan: FastAPI analysis service (`/health`, `/analyze`) | 19 | Merged into the wrong branch, so not on `main` |
-| Aryan's service brought to `main` | 20 | **Open, waiting for Anuj's merge** |
+| Aryan's service brought to `main` | 20 | Merged |
+| Memory and Anuj's tasks | 21 | Merged |
+| Frontend (Tasks 10-12): login, workspace, result replay, hints, sample mode | anuj-frontend | **Open, waiting for Anuj's merge** |
 
 Also done:
 - `main` has a `protect-main` ruleset: pull requests required, `backend-tests`, `runner-tests` and `frontend-tests` must pass, 0 approvals, no force pushes or deletion.
@@ -83,6 +85,9 @@ Backend tasks are done. Remaining, in order:
 10. When the runner is ready: test the full flow end to end and fix mismatches.
 11. If Aryan does analysis: make the backend call `/analyze`.
 
+## Frontend, 26 Nov
+Anuj chose to have Claude build the frontend (originally Abhi's). Run with `python -m http.server 5173 --directory frontend`; the backend only allows CORS from port 5173. `result.html?sample=1` replays the real recorded Two Sum runs with example hint text, clearly labelled, for demos. 35 `node --test` tests. Tested live against the real backend on PostgreSQL: sign-up with consent, submit, then FAILED "runner unavailable" as expected. The project report is `D:/Download/pdf/MentorLens_Project_Report_v2`.
+
 ## Open review points for Aryan
 - Disable Pylint rules `C0103`, `C0114`, `C0115`, `C0116` and `R0903`, which flag names LeetCode forces on students.
 - Errors use `{"detail": ...}`; the contract uses `{"error": ...}`.
@@ -90,7 +95,6 @@ Backend tasks are done. Remaining, in order:
 
 ## Not built
 - Runner (Tasks 2-4): no `POST /run` yet. Only the Pylint analysis exists.
-- Frontend (Tasks 10-12) and consent checkbox: sign-up needs `"consent": true` from the frontend.
 - Samples (Task 13): only `two_sum_sorted_wrong_pointer` exists.
 - Dashboard (Task 15): `GET /api/students/me/progress` doesn't exist.
 
